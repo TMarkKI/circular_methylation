@@ -1,0 +1,446 @@
+library(dplyr)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(circlize)
+
+
+file_bedmethyl = "C://Users//Mark//Downloads//subsampled_exp175.tsv" #<definite/path/to/bedmethyl/file>
+file_depth = "C://Users//Mark//Downloads//exp175_depth.tsv" #<definite/path/to/samtools/depth/file>
+file_fai = "C://Users//Mark//Downloads//GCA_000002765.3.fasta.fai" #<definite/path/to/fai(ref)>
+
+
+df_bedmethyl <- read.csv(file_bedmethyl, sep = "\t", header = FALSE)
+colnames(df_bedmethyl) <- c("Chromosome", 
+                  "Start_chrom_pos", 
+                  "End_chrom_pos", 
+                  "mod_code", 
+                  "mod_score", 
+                  "strand", 
+                  "strand_pos_start", 
+                  "strand_pos_end", 
+                  "color",
+                  "mod_cov", 
+                  "percent_mod",
+                  "mod",
+                  "canonical_mod",
+                  "other_mod",
+                  "delete_mod",
+                  "fail_mod",
+                  "variant_mod",
+                  "no_call")
+df_bedmethyl$Chromosome <- sub(".*\\|", "", df_bedmethyl$Chromosome)
+
+drops <- c("strand","strand_start", "strand_pos_start", "strand_pos_end", "color", "mod_cov")
+df_bedmethyl <- df_bedmethyl[ , !(names(df_bedmethyl) %in% drops)]
+
+#df_bedmethyl <- df_bedmethyl %>% mutate(new_position = Start_chrom_pos)
+df_bedmethyl <- df_bedmethyl %>%
+  mutate(Chromosome = case_when(
+    Chromosome == "AL844501.2" ~ "1",
+    Chromosome == "LN999943.1" ~ "2",
+    Chromosome == "AL844502.2" ~ "3",
+    Chromosome == "AL844503.2" ~ "4",
+    Chromosome == "AL844504.2" ~ "5",
+    Chromosome == "AL844505.2" ~ "6",
+    Chromosome == "AL844506.3" ~ "7",
+    Chromosome == "AL844507.3" ~ "8",
+    Chromosome == "AL844508.2" ~ "9",
+    Chromosome == "LN999944.1" ~ "10",
+    Chromosome == "LN999945.1" ~ "11",
+    Chromosome == "LN999947.1" ~ "12",
+    Chromosome == "AL844509.3" ~ "13",
+    Chromosome == "LN999946.1" ~ "14",
+    Chromosome == "LR605956.1" ~ "API",
+    Chromosome == "LR605957.1" ~ "MIT",
+    TRUE ~ Chromosome
+  ))
+#separating the different methyl groups/motifs/codes to plot them separatedly
+df_bedmethyl_h <- df_bedmethyl %>%
+  filter(mod_code == "h")
+df_bedmethyl_m <- df_bedmethyl %>%
+  filter(mod_code == "m")
+df_bedmethyl_a <- df_bedmethyl %>%
+  filter(mod_code == "a")
+
+
+
+df_depth <- read.csv(file_depth, sep = "\t", header = FALSE)
+colnames(df_depth) <- c("Chromosome", "Position", "Coverage_depth")
+df_depth$Chromosome <- sub(".*\\|", "", df_depth$Chromosome)
+df_depth <- df_depth %>%
+  mutate(Chromosome = case_when(
+    Chromosome == "AL844501.2" ~ "1",
+    Chromosome == "LN999943.1" ~ "2",
+    Chromosome == "AL844502.2" ~ "3",
+    Chromosome == "AL844503.2" ~ "4",
+    Chromosome == "AL844504.2" ~ "5",
+    Chromosome == "AL844505.2" ~ "6",
+    Chromosome == "AL844506.3" ~ "7",
+    Chromosome == "AL844507.3" ~ "8",
+    Chromosome == "AL844508.2" ~ "9",
+    Chromosome == "LN999944.1" ~ "10",
+    Chromosome == "LN999945.1" ~ "11",
+    Chromosome == "LN999947.1" ~ "12",
+    Chromosome == "AL844509.3" ~ "13",
+    Chromosome == "LN999946.1" ~ "14",
+    Chromosome == "LR605956.1" ~ "API",
+    Chromosome == "LR605957.1" ~ "MIT",
+    TRUE ~ Chromosome
+  ))
+
+
+#create ref sector
+df_fai <- read.table(file_fai, header = FALSE, sep = "\t",
+                     col.names = c("Chromosome", "length", "offset", "linebases", "linewidth"))
+df_fai$Chromosome <- sub(".*\\|", "", df_fai$Chromosome)
+genome_sectors <- df_fai %>% select(Chromosome, length)
+genome_sectors <- genome_sectors %>% mutate(Chromosome = case_when(
+  Chromosome == "AL844501.2" ~ "1",
+  Chromosome == "LN999943.1" ~ "2",
+  Chromosome == "AL844502.2" ~ "3",
+  Chromosome == "AL844503.2" ~ "4",
+  Chromosome == "AL844504.2" ~ "5",
+  Chromosome == "AL844505.2" ~ "6",
+  Chromosome == "AL844506.3" ~ "7",
+  Chromosome == "AL844507.3" ~ "8",
+  Chromosome == "AL844508.2" ~ "9",
+  Chromosome == "LN999944.1" ~ "10",
+  Chromosome == "LN999945.1" ~ "11",
+  Chromosome == "LN999947.1" ~ "12",
+  Chromosome == "AL844509.3" ~ "13",
+  Chromosome == "LN999946.1" ~ "14",
+  Chromosome == "LR605956.1" ~ "API",
+  Chromosome == "LR605957.1" ~ "MIT"
+))
+
+
+df_merge <- df_bedmethyl %>%
+  rename(Position = Start_chrom_pos) %>%
+  inner_join(df_depth, by = c("Chromosome", "Position"))
+
+#df_fai$Chromosome <- gsub(".*\\|(.*?)\\..*", "\\1", df_fai$name)  # Shorten names if needed
+df_fai <- df_fai %>% mutate(Chromosome = case_when(
+  Chromosome == "AL844501.2" ~ "1",
+  Chromosome == "LN999943.1" ~ "2",
+  Chromosome == "AL844502.2" ~ "3",
+  Chromosome == "AL844503.2" ~ "4",
+  Chromosome == "AL844504.2" ~ "5",
+  Chromosome == "AL844505.2" ~ "6",
+  Chromosome == "AL844506.3" ~ "7",
+  Chromosome == "AL844507.3" ~ "8",
+  Chromosome == "AL844508.2" ~ "9",
+  Chromosome == "LN999944.1" ~ "10",
+  Chromosome == "LN999945.1" ~ "11",
+  Chromosome == "LN999947.1" ~ "12",
+  Chromosome == "AL844509.3" ~ "13",
+  Chromosome == "LN999946.1" ~ "14",
+  Chromosome == "LR605956.1" ~ "API",
+  Chromosome == "LR605957.1" ~ "MIT"
+))
+
+#quality control, variables used below
+min_depth <- min(df_depth$Coverage_depth, na.rm = TRUE)
+min_depth
+max_depth <- max(df_depth$Coverage_depth, na.rm = TRUE)
+max_depth
+
+#for testing
+nrow(df_depth)
+df_depth <- df_depth %>% sample_frac(0.1)
+nrow(df_depth)
+
+
+
+#make circularise format
+tiff("circlize_plot.tiff", width = 2000, height = 2000, res = 300)
+circos.clear()
+circos.par(cell.padding = c(0.01, 0, 0.01, 0),
+           track.margin = c(0.01, 0.01)
+           )
+circos.initialize(sectors = genome_sectors$Chromosome, #create genome sectors for outercircle
+                 xlim = cbind(rep(0, nrow(genome_sectors)), genome_sectors$length))
+
+#labelling the tracks with the chromosomes
+circos.track(
+  track.index = 1,
+  panel.fun = function(x, y) {
+    chr <- CELL_META$sector.index
+    xcentre <- mean(CELL_META$xlim)
+    circos.text(x = xcentre, y = CELL_META$ylim[2] + 10,
+                labels = chr, 
+                facing = "reverse.clockwise",
+                niceFacing = TRUE, 
+                adj = c(0.5, 0.5), 
+                cex = 0.6)
+  },
+  bg.border = NA,
+  ylim = c(0,12),
+  track.height = 0.05
+)
+
+
+#plotting tracks via reference chromosomes with depth to show depth coverage across reference; log10 for depth coverage to scale for plotting: 0 depth offset with +1
+circos.trackPlotRegion(
+  ylim = c(0, log10(max_depth + 1)),  # Log scale limits
+  track.height = 0.1,
+  panel.fun = function(region, value, ...) {
+    chr <- CELL_META$sector.index
+    chr_data <- df_depth[df_depth$Chromosome == chr, ]
+    chr_data <- chr_data[order(chr_data$Position), ]
+    
+    print(paste("Plotting:", chr, "n =", nrow(chr_data)))
+    
+    if (nrow(chr_data) > 1) {
+      log_depth <- log10(chr_data$Coverage_depth + 1)  # avoid log(0)
+      circos.lines(
+        x = chr_data$Position,
+        y = log_depth,
+        col = "blue",
+        lwd = 1
+      )
+    }
+    #circos.text(
+    #  x = mean(CELL_META$xlim),
+    #  y = 1.1 * CELL_META$ylim[2],  # slightly above the top of this track
+    #  labels = "Depth (log10)",
+    #  facing = "inside",
+    #  niceFacing = TRUE,
+    #  cex = 0.5,
+    #  adj = c(0.5, 0)
+    #)
+    
+  }
+)
+
+
+
+#plot methylation proportions (separated by h,m,a)
+#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+circos.trackPlotRegion(
+  ylim = c(0, 1),
+  track.height = 0.15,
+  panel.fun = function(region, value, ...) {
+    chr <- CELL_META$sector.index
+    chr_data <- df_bedmethyl_a[df_bedmethyl_a$Chromosome == chr, ]
+    
+    print(paste("Plotting:", chr, "n =", nrow(chr_data)))
+    str(chr_data)
+    
+    if (!"Start_chrom_pos" %in% colnames(chr_data)) {
+      message("Missing 'Start_chrom_pos' column in chr_data; skipping chromosome ", chr)
+      return(NULL)
+    }
+    
+    for (i in seq_len(nrow(chr_data))) {
+      x_val <- chr_data$Start_chrom_pos[i]
+      if (length(x_val) != 1 || is.na(x_val)) next
+      
+      x_pos <- as.numeric(x_val)
+      
+      total <- with(chr_data[i, ], mod + canonical_mod + other_mod + delete_mod + fail_mod + variant_mod + no_call)
+      if (is.na(total) || total == 0) next
+      
+      segments <- c("no_call", "mod", "canonical_mod", "other_mod", "delete_mod", "fail_mod", "variant_mod")
+      colors <- c("#ffffff00", "darkgreen", "lightgreen", "yellow", "grey", "red", "black")
+      
+      ybottom <- 0
+      
+      for (j in seq_along(segments)) {
+        seg_val <- as.numeric(chr_data[[segments[j]]][i])
+        if (is.na(seg_val)) seg_val <- 0
+        
+        height <- seg_val / total
+        ytop <- ybottom + height
+        
+        # Skip problematic cases
+        if (any(is.na(c(x_pos, ybottom, ytop, height))) || length(x_pos) != 1 || length(ybottom) != 1 || length(ytop) != 1) {
+          message("Skipping problematic rectangle at row ", i, ", segment ", segments[j])
+          next
+        }
+        print(paste("Drawing rectangle:", chr, "x =", x_pos, "ytop =", ytop, "color =", colors[j]))
+        
+        circos.rect(
+          xleft = x_pos - 0.5,
+          xright = x_pos + 0.5,
+          ybottom = ybottom,
+          ytop = ytop,
+          col = colors[j],
+          border = NA
+        )
+        
+        ybottom <- ytop
+      }
+    }
+  }
+)
+
+
+#HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+#HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+#HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+
+circos.trackPlotRegion(
+  ylim = c(0, 1),
+  track.height = 0.15,
+  panel.fun = function(region, value, ...) {
+    chr <- CELL_META$sector.index
+    chr_data <- df_bedmethyl_h[df_bedmethyl_h$Chromosome == chr, ]
+    
+    print(paste("Plotting:", chr, "n =", nrow(chr_data)))
+    str(chr_data)
+    
+    if (!"Start_chrom_pos" %in% colnames(chr_data)) {
+      message("Missing 'Start_chrom_pos' column in chr_data; skipping chromosome ", chr)
+      return(NULL)
+    }
+    
+    for (i in seq_len(nrow(chr_data))) {
+      x_val <- chr_data$Start_chrom_pos[i]
+      if (length(x_val) != 1 || is.na(x_val)) next
+      
+      x_pos <- as.numeric(x_val)
+      
+      total <- with(chr_data[i, ], mod + canonical_mod + other_mod + delete_mod + fail_mod + variant_mod + no_call)
+      if (is.na(total) || total == 0) next
+      
+      segments <- c("no_call", "mod", "canonical_mod", "other_mod", "delete_mod", "fail_mod", "variant_mod")
+      colors <- c("#ffffff00", "darkgreen", "lightgreen", "yellow", "grey", "red", "black")
+      
+      ybottom <- 0
+      
+      for (j in seq_along(segments)) {
+        seg_val <- as.numeric(chr_data[[segments[j]]][i])
+        if (is.na(seg_val)) seg_val <- 0
+        
+        height <- seg_val / total
+        ytop <- ybottom + height
+        
+        # Skip problematic cases
+        if (any(is.na(c(x_pos, ybottom, ytop, height))) || length(x_pos) != 1 || length(ybottom) != 1 || length(ytop) != 1) {
+          message("Skipping problematic rectangle at row ", i, ", segment ", segments[j])
+          next
+        }
+        print(paste("Drawing rectangle:", chr, "x =", x_pos, "ytop =", ytop, "color =", colors[j]))
+        
+        circos.rect(
+          xleft = x_pos - 1000,
+          xright = x_pos + 1000,
+          ybottom = ybottom,
+          ytop = ytop,
+          col = colors[j],
+          border = NA
+        )
+        
+        ybottom <- ytop
+      }
+    }
+  }
+)
+
+
+#MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+#MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+#MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+
+circos.trackPlotRegion(
+  ylim = c(0, 1),
+  track.height = 0.15,
+  panel.fun = function(region, value, ...) {
+    chr <- CELL_META$sector.index
+    chr_data <- df_bedmethyl_m[df_bedmethyl_m$Chromosome == chr, ]
+    
+    print(paste("Plotting:", chr, "n =", nrow(chr_data)))
+    str(chr_data)
+    
+    if (!"Start_chrom_pos" %in% colnames(chr_data)) {
+      message("Missing 'Start_chrom_pos' column in chr_data; skipping chromosome ", chr)
+      return(NULL)
+    }
+    
+    for (i in seq_len(nrow(chr_data))) {
+      x_val <- chr_data$Start_chrom_pos[i]
+      if (length(x_val) != 1 || is.na(x_val)) next
+      
+      x_pos <- as.numeric(x_val)
+      
+      total <- with(chr_data[i, ], mod + canonical_mod + other_mod + delete_mod + fail_mod + variant_mod + no_call)
+      if (is.na(total) || total == 0) next
+      
+      segments <- c("no_call", "mod", "canonical_mod", "other_mod", "delete_mod", "fail_mod", "variant_mod")
+      colors <- c("#ffffff00", "darkgreen", "lightgreen", "yellow", "grey", "red", "black")
+      
+      ybottom <- 0
+      
+      for (j in seq_along(segments)) {
+        seg_val <- as.numeric(chr_data[[segments[j]]][i])
+        if (is.na(seg_val)) seg_val <- 0
+        
+        height <- seg_val / total
+        ytop <- ybottom + height
+        
+        # Skip problematic cases
+        if (any(is.na(c(x_pos, ybottom, ytop, height))) || length(x_pos) != 1 || length(ybottom) != 1 || length(ytop) != 1) {
+          message("Skipping problematic rectangle at row ", i, ", segment ", segments[j])
+          next
+        }
+        print(paste("Drawing rectangle:", chr, "x =", x_pos, "ytop =", ytop, "color =", colors[j]))
+        
+        circos.rect(
+          xleft = x_pos - 1000,
+          xright = x_pos + 1000,
+          ybottom = ybottom,
+          ytop = ytop,
+          col = colors[j],
+          border = NA
+        )
+        
+        ybottom <- ytop
+      }
+    }
+  }
+)
+
+
+
+
+
+#unique(df_bedmethyl_a$Chromosome)
+#head(df_bedmethyl_a)
+#str(df_bedmethyl_a$Start_chrom_pos)
+#summary(df_bedmethyl_a$mod +
+#          df_bedmethyl_a$canonical_mod +
+#          df_bedmethyl_a$other_mod +
+#          df_bedmethyl_a$delete_mod +
+#          df_bedmethyl_a$fail_mod +
+#          df_bedmethyl_a$variant_mod +
+#          df_bedmethyl_a$no_call)
+dev.off()
+
+
+#%methylation motifs
+circos.trackPlotRegion(
+  sectors = df_merge$Chromosome,
+  y = df_merge$percent_mod,
+  x = df_merge$Position,
+  panel.fun = function(region, value, ...) {
+    chr = CELL_META$sector.index
+    df_chr = df_merge[df_merge$Chromosome == chr, ]
+    
+    for (i in 1:nrow(df_chr)) {
+      circos.rect(
+        xleft = df_chr$Position[i] - 1,
+        xright = df_chr$Position[i] + 1,
+        ybottom = 0,
+        ytop = df_chr$percent_mod[i]/100,
+        col = "#2b8cbe",
+        border = NA
+      )
+    }
+  },
+  ylim = c(0, 1),
+  track.height = 0.1,
+  bg.border = NA
+)
