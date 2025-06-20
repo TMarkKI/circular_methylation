@@ -222,6 +222,7 @@ circos.trackPlotRegion(
 circos.trackPlotRegion(
   ylim = c(0, 1),
   track.height = 0.15,
+  bg.border = NA,
   panel.fun = function(region, value, ...) {
     chr <- CELL_META$sector.index
     chr_data <- df_bedmethyl_a[df_bedmethyl_a$Chromosome == chr, ]
@@ -235,10 +236,11 @@ circos.trackPlotRegion(
     }
     
     for (i in seq_len(nrow(chr_data))) {
-      x_val <- chr_data$Start_chrom_pos[i]
-      if (length(x_val) != 1 || is.na(x_val)) next
+      xleft <- chr_data$Start_chrom_pos[i] - 2
+      xright <- chr_data$End_chrom_pos[i] + 2
+      #print(paste("xleft =", xleft, "xright =", xright, "sector.xlim =", CELL_META$xlim[1], "-", CELL_META$xlim[2]))
       
-      x_pos <- as.numeric(x_val)
+      if (any(is.na(c(xleft, xright)))) next
       
       total <- with(chr_data[i, ], mod + canonical_mod + other_mod + delete_mod + fail_mod + variant_mod + no_call)
       if (is.na(total) || total == 0) next
@@ -255,16 +257,14 @@ circos.trackPlotRegion(
         height <- seg_val / total
         ytop <- ybottom + height
         
-        # Skip problematic cases
-        if (any(is.na(c(x_pos, ybottom, ytop, height))) || length(x_pos) != 1 || length(ybottom) != 1 || length(ytop) != 1) {
+        if (any(is.na(c(xleft, xright, ybottom, ytop)))) {
           message("Skipping problematic rectangle at row ", i, ", segment ", segments[j])
           next
         }
-        print(paste("Drawing rectangle:", chr, "x =", x_pos, "ytop =", ytop, "color =", colors[j]))
         
         circos.rect(
-          xleft = x_pos - 0.5,
-          xright = x_pos + 0.5,
+          xleft = xleft,
+          xright = xright,
           ybottom = ybottom,
           ytop = ytop,
           col = colors[j],
@@ -277,6 +277,9 @@ circos.trackPlotRegion(
   }
 )
 
+##################################
+#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA#heatmap for percentage modification
+
 
 #HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 #HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
@@ -285,6 +288,7 @@ circos.trackPlotRegion(
 circos.trackPlotRegion(
   ylim = c(0, 1),
   track.height = 0.15,
+  bg.border = NA,
   panel.fun = function(region, value, ...) {
     chr <- CELL_META$sector.index
     chr_data <- df_bedmethyl_h[df_bedmethyl_h$Chromosome == chr, ]
@@ -298,10 +302,11 @@ circos.trackPlotRegion(
     }
     
     for (i in seq_len(nrow(chr_data))) {
-      x_val <- chr_data$Start_chrom_pos[i]
-      if (length(x_val) != 1 || is.na(x_val)) next
+      xleft <- chr_data$Start_chrom_pos[i] - 2
+      xright <- chr_data$End_chrom_pos[i] + 2
+      #print(paste("xleft =", xleft, "xright =", xright, "sector.xlim =", CELL_META$xlim[1], "-", CELL_META$xlim[2]))
       
-      x_pos <- as.numeric(x_val)
+      if (any(is.na(c(xleft, xright)))) next
       
       total <- with(chr_data[i, ], mod + canonical_mod + other_mod + delete_mod + fail_mod + variant_mod + no_call)
       if (is.na(total) || total == 0) next
@@ -318,16 +323,14 @@ circos.trackPlotRegion(
         height <- seg_val / total
         ytop <- ybottom + height
         
-        # Skip problematic cases
-        if (any(is.na(c(x_pos, ybottom, ytop, height))) || length(x_pos) != 1 || length(ybottom) != 1 || length(ytop) != 1) {
+        if (any(is.na(c(xleft, xright, ybottom, ytop)))) {
           message("Skipping problematic rectangle at row ", i, ", segment ", segments[j])
           next
         }
-        print(paste("Drawing rectangle:", chr, "x =", x_pos, "ytop =", ytop, "color =", colors[j]))
         
         circos.rect(
-          xleft = x_pos - 1000,
-          xright = x_pos + 1000,
+          xleft = xleft,
+          xright = xright,
           ybottom = ybottom,
           ytop = ytop,
           col = colors[j],
@@ -348,6 +351,7 @@ circos.trackPlotRegion(
 circos.trackPlotRegion(
   ylim = c(0, 1),
   track.height = 0.15,
+  bg.border = NA,
   panel.fun = function(region, value, ...) {
     chr <- CELL_META$sector.index
     chr_data <- df_bedmethyl_m[df_bedmethyl_m$Chromosome == chr, ]
@@ -361,10 +365,11 @@ circos.trackPlotRegion(
     }
     
     for (i in seq_len(nrow(chr_data))) {
-      x_val <- chr_data$Start_chrom_pos[i]
-      if (length(x_val) != 1 || is.na(x_val)) next
+      xleft <- chr_data$Start_chrom_pos[i] - 2
+      xright <- chr_data$End_chrom_pos[i] + 2
+      #print(paste("xleft =", xleft, "xright =", xright, "sector.xlim =", CELL_META$xlim[1], "-", CELL_META$xlim[2]))
       
-      x_pos <- as.numeric(x_val)
+      if (any(is.na(c(xleft, xright)))) next
       
       total <- with(chr_data[i, ], mod + canonical_mod + other_mod + delete_mod + fail_mod + variant_mod + no_call)
       if (is.na(total) || total == 0) next
@@ -381,16 +386,14 @@ circos.trackPlotRegion(
         height <- seg_val / total
         ytop <- ybottom + height
         
-        # Skip problematic cases
-        if (any(is.na(c(x_pos, ybottom, ytop, height))) || length(x_pos) != 1 || length(ybottom) != 1 || length(ytop) != 1) {
+        if (any(is.na(c(xleft, xright, ybottom, ytop)))) {
           message("Skipping problematic rectangle at row ", i, ", segment ", segments[j])
           next
         }
-        print(paste("Drawing rectangle:", chr, "x =", x_pos, "ytop =", ytop, "color =", colors[j]))
         
         circos.rect(
-          xleft = x_pos - 1000,
-          xright = x_pos + 1000,
+          xleft = xleft,
+          xright = xright,
           ybottom = ybottom,
           ytop = ytop,
           col = colors[j],
@@ -418,29 +421,3 @@ circos.trackPlotRegion(
 #          df_bedmethyl_a$variant_mod +
 #          df_bedmethyl_a$no_call)
 dev.off()
-
-
-#%methylation motifs
-circos.trackPlotRegion(
-  sectors = df_merge$Chromosome,
-  y = df_merge$percent_mod,
-  x = df_merge$Position,
-  panel.fun = function(region, value, ...) {
-    chr = CELL_META$sector.index
-    df_chr = df_merge[df_merge$Chromosome == chr, ]
-    
-    for (i in 1:nrow(df_chr)) {
-      circos.rect(
-        xleft = df_chr$Position[i] - 1,
-        xright = df_chr$Position[i] + 1,
-        ybottom = 0,
-        ytop = df_chr$percent_mod[i]/100,
-        col = "#2b8cbe",
-        border = NA
-      )
-    }
-  },
-  ylim = c(0, 1),
-  track.height = 0.1,
-  bg.border = NA
-)
